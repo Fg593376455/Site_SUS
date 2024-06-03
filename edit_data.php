@@ -2,11 +2,13 @@
 session_start();
 include('db.php');
 
+// Verifica se o usuário está logado
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
 
+// Verifica se o usuário é um administrador
 $user_id = $_SESSION['user_id'];
 $sql = "SELECT is_admin FROM users WHERE id=?";
 $stmt = $conn->prepare($sql);
@@ -19,6 +21,7 @@ if (!$row['is_admin']) {
     die("Acesso negado!");
 }
 
+// Processa o formulário quando for enviado
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $edit_type = $_POST['edit_type'];
     
@@ -144,7 +147,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <input type="button" value="Voltar" onclick="window.location.href='dashboard_admin.php';">
     </div>
 
-    
+    <script>
+        function toggleForm(formType) {
+            document.getElementById('user_form').style.display = (formType === 'user') ? 'block' : 'none';
+            document.getElementById('appointment_form').style.display = (formType === 'appointment') ? 'block' : 'none';
+        }
+    </script>
 </body>
 </html>
+
 
