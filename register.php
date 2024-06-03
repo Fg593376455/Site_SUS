@@ -84,6 +84,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .register-container a:hover {
             text-decoration: underline;
         }
+        .back-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -102,6 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="checkbox" id="is_admin" name="is_admin"><br><br><br>
             <input type="submit" value="Registrar">
         </form>
+        <button class="back-button" onclick="window.history.back();">Voltar</button>
         <p>Já tem uma conta? <a href="index.php">Faça login</a></p>
     </div>
 </body>

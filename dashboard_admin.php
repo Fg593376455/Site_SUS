@@ -58,6 +58,18 @@ $conn->close();
         .panel-container a:hover {
             text-decoration: underline;
         }
+        .back-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -71,6 +83,7 @@ $conn->close();
             <p><a href="delete_data.php">Excluir Dados ou Consultas</a></p>
             <p><a href="alert.php">Verificar Alertas de Medicamentos</a></p>
         <?php endif; ?>
+       <p><a href="register.php">Registre-se aqui</a></p>
         <p><a href="logout.php">Sair</a></p>
     </div>
 </body>
