@@ -1,83 +1,127 @@
 <?php
 session_start();
+
+// Verifica login
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
-    exit(); // Garante que o script PHP não continue executando após redirecionar
+    exit();
 }
 
 include('db.php');
 
 $user_id = $_SESSION['user_id'];
 
-// Usar prepared statements para evitar injeção de SQL
-$stmt = $conn->prepare("SELECT date, time FROM appointments WHERE user_id = ?");
+// Consulta consultas do usuário
+$stmt = $conn->prepare("SELECT date, time FROM appointments WHERE user_id = ? ORDER BY date, time");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
+// Fecha depois da consulta
+$stmt->close();
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Horário das Consultas</title>
+    <title>Horários das Consultas</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #87CEFA;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
+
         .appointment-container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background: rgba(255,255,255,0.9);
+            width: 420px;
+            padding: 30px;
+            border-radius: 12px;
             text-align: center;
+            box-shadow: 0 0 12px rgba(0,0,0,0.25);
         }
-        .appointment-container h2 {
+
+        h2 {
             margin-bottom: 20px;
+            color: #007BFF;
         }
-        .appointment-container p {
-            margin: 10px 0;
-        }
-        .back-button {
+
+        .table-container {
             margin-top: 20px;
-            padding: 10px 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        table th {
             background-color: #007BFF;
             color: white;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
         }
+
+        .no-appointments {
+            font-size: 16px;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 20px;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
         .back-button:hover {
             background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <div class="appointment-container">
-        <h2>Horário de Consultas</h2>
-        <?php
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                echo "<p>Data: " . htmlspecialchars($row["date"]) . " - Hora: " . htmlspecialchars($row["time"]) . "</p>";
-            }
-        } else {
-            echo "<p>Nenhuma consulta marcada.</p>";
-        }
 
-        // Fechar a declaração e a conexão
-        $stmt->close();
-        $conn->close();
-        ?>
-    
+    <div class="appointment-container">
+        <h2>Consultas Marcadas</h2>
+
+        <div class="table-container">
+            <?php if ($result->num_rows > 0): ?>
+                <table>
+                    <tr>
+                        <th>Data</th>
+                        <th>Hora</th>
+                    </tr>
+
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row["date"]); ?></td>
+                            <td><?= htmlspecialchars($row["time"]); ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+
+                </table>
+            <?php else: ?>
+                <p class="no-appointments">Nenhuma consulta marcada.</p>
+            <?php endif; ?>
+        </div>
+
         <a href="dashboard_user.php" class="back-button">Voltar</a>
     </div>
+
 </body>
 </html>
-
