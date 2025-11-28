@@ -4,13 +4,10 @@ $username = "root";
 $password = "";
 $dbname = "sus";
 
-// Cria a conexão
 $conn = new mysqli($servername, $username, $password, $dbname);
-/*
- //Verifica a conexão
+
+// Verifica a conexão
 if ($conn->connect_error) {
-    
-    echo"conexão falhou";
+    die("Falha na conexão: " . $conn->connect_error);
 }
-echo "Conexão bem-sucedida";
-?>*/
+?>
