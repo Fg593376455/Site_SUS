@@ -1,76 +1,144 @@
-🏥 Sistema de Gestão de Farmácia — CRUD Completo
+# 🏥 Sistema SUS – Gerenciamento de Pacientes, Consultas e Medicamentos
 
-Este projeto é um sistema simples para gestão de farmácia, desenvolvido com foco na prática de operações CRUD (Create, Read, Update, Delete).
-O sistema permite gerenciar usuários e medicamentos, além de incluir uma área de login para controle básico de acesso.
+Sistema web desenvolvido em **PHP + MySQL**, com foco em controle de:
 
-🚀 Funcionalidades
-🔐 Autenticação
+- Cadastro de usuários (pacientes e administradores)
+- Login seguro com hash de senha
+- Consultas agendadas
+- Alertas de medicamentos
+- Painel administrativo completo
+- Exclusão de usuários, medicamentos e consultas
 
-Página de login
+Este sistema foi criado para facilitar a organização da rotina de saúde dos pacientes e permitir que administradores tenham controle total do banco de dados com uma interface simples e intuitiva.
 
-Controle básico de sessão
+---
 
-👥 Gestão de Usuários
+## 🚀 Tecnologias Utilizadas
 
-Cadastro de novos usuários
+- **PHP 8+**
+- **MySQL (MariaDB)**
+- **XAMPP** ou outro servidor local
+- **HTML5 / CSS3**
+- **Prepared Statements (SQL Seguro)**
 
-Edição de dados
+---
 
-Exclusão
+## 📌 Funcionalidades
 
-Listagem completa
+### 👤 Área do Usuário
+- Login por CPF e senha
+- Visualização de consultas
+- Visualização de alertas de medicamentos
 
-💊 Gestão de Medicamentos
+### 🛠️ Área do Administrador
+- Registro de novos usuários
+- Listagem completa de usuários e consultas
+- Edição de dados
+- Exclusão de:
+  - Usuários
+  - Medicamentos
+  - Consultas
 
-Cadastro de medicamentos
+⚠️ Exclusão de usuários remove automaticamente suas consultas e medicamentos (sem erros de chave estrangeira).
 
-Edição
+---
 
-Exclusão
+## 📁 Estrutura do Banco de Dados
 
-Listagem geral
-
-🛠️ Tecnologias Utilizadas
-
-PHP / CSS 
-
-MySQL 
-
-📦 Como Rodar o Projeto Localmente
+### **Tabela `users`**
+```sql
+id INT AUTO_INCREMENT PRIMARY KEY
+name VARCHAR(255)
+cpf VARCHAR(20) UNIQUE
+phone VARCHAR(50)
+password VARCHAR(255)
+is_admin TINYINT(1)
+Tabela medications
+sql
+Copy code
+id INT AUTO_INCREMENT PRIMARY KEY
+user_id INT
+name VARCHAR(255)
+next_refill_date DATE
+Tabela consultas
+sql
+Copy code
+id INT AUTO_INCREMENT PRIMARY KEY
+user_id INT
+descricao VARCHAR(255)
+date DATE
+time TIME
+📦 Instalação
 1️⃣ Clonar o repositório
-git clone https://github.com/Fg593376455/Site_SUS.git
+bash
+Copy code
+git clone https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git
+2️⃣ Importar o banco de dados
+Abra phpMyAdmin
 
-2️⃣ Configurar o ambiente
+Crie um banco chamado sus
 
-Use um servidor local, como:
+Importe o arquivo .sql (caso exista no repositório)
 
-XAMPP
+3️⃣ Configurar conexão
+Arquivo: db.php
 
-WAMP
+php
+Copy code
+<?php
+$servername = "127.0.0.1";
+$username = "root";
+$password = "";
+$dbname = "sus";
 
-Laragon
+$conn = new mysqli($servername, $username, $password, $dbname);
 
-3️⃣ Importar o banco de dados
+if ($conn->connect_error) {
+    die("Falha na conexão: " . $conn->connect_error);
+}
+?>
+4️⃣ Abrir no navegador
+Acesse:
 
-Abra o phpMyAdmin
+bash
+Copy code
+http://localhost/Site_Sus/index.php
+🔐 Segurança Implementada
+Hash de senha com password_hash()
 
-Crie um banco de dados (exemplo: farmacia)
+Login com password_verify()
 
-Importe o arquivo .sql do projeto (se existir)
+SQL protegido com Prepared Statements
 
-4️⃣ Mover o projeto para a pasta correta
+Bloqueio de páginas para usuários não logados
 
-Coloque o projeto dentro de:
+Proteção contra SQL Injection
 
-htdocs/  (XAMPP)
-www/     (WAMP)
+🖥️ Telas do Sistema
+(adicione prints aqui futuramente)
 
-5️⃣ Acessar no navegador
-http://localhost/Site_SUS
+✨ Melhorias Futuras (Opcional)
+Sistema de relatório em PDF
+
+Dashboard com gráficos
+
+Notificações automáticas de consulta e medicamentos
+
+API REST
+
+Versão mobile (PWA)
 
 👨‍💻 Autor
+Felipe Gomes
 
-Felipe Gomes Gonzaga
-Estudante de Banco de Dados – Uninove
-Certificações: AZ-900, COBIT 5
-GitHub: https://github.com/Fg593376455
+Projeto desenvolvido para estudo e aprimoramento em:
+
+PHP
+
+Banco de Dados
+
+Estruturas seguras de login
+
+CRUD completo
+
+Boas práticas de desenvolvimento
