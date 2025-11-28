@@ -2,58 +2,91 @@
 session_start();
 include('db.php');
 
-// Verifica se o usuário está logado
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit(); // Garante que o script PHP não continue executando após redirecionar
-}
-
-$user_id = $_SESSION['user_id'];
-
-// Usar prepared statements para evitar injeção de SQL
-$stmt = $conn->prepare("SELECT is_admin FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$is_admin = $row['is_admin'];
-
-// Fecha a declaração
-$stmt->close();
-
-// Verifica se o usuário é administrador
-if (!$is_admin) {
-    echo "Acesso negado. Apenas administradores podem acessar esta página.";
-    exit();
-}
-
 $message = "";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $delete_type = $_POST['delete_type'];
-    if ($delete_type == "user" && isset($_POST['user_name'])) {
-        $user_name_to_delete = $_POST['user_name'];
-        $delete_stmt = $conn->prepare("DELETE FROM users WHERE name = ?");
-        $delete_stmt->bind_param("s", $user_name_to_delete);
-    } elseif ($delete_type == "appointment" && isset($_POST['appointment_id'])) {
-        $appointment_id_to_delete = $_POST['appointment_id'];
-        $delete_stmt = $conn->prepare("DELETE FROM appointments WHERE id = ?");
-        $delete_stmt->bind_param("i", $appointment_id_to_delete);
-    }
-    
-    if ($delete_stmt->execute()) {
-        if ($delete_stmt->affected_rows > 0) {
-            $message = "Dados excluídos com sucesso!";
-        } else {
-            $message = "Nenhum registro encontrado para exclusão.";
-        }
-    } else {
-        $message = "Erro ao excluir dados: " . $conn->error;
-    }
+// ------------------------------------------------------
+// EXCLUIR USUÁRIO POR NOME (EXCLUI MEDICAMENTOS + CONSULTAS ANTES)
+// ------------------------------------------------------
+if (isset($_POST['delete_user_name'])) {
+    $name = trim($_POST['delete_user_name']);
 
-    $delete_stmt->close();
+    if ($name !== "") {
+
+        // Buscar IDs dos usuários com nome parecido
+        $u = $conn->prepare("SELECT id FROM users WHERE name LIKE ?");
+        $like = "%".$name."%";
+        $u->bind_param("s", $like);
+        $u->execute();
+        $res = $u->get_result();
+
+        while ($user = $res->fetch_assoc()) {
+            $uid = $user['id'];
+
+            // Excluir consultas
+            $delC = $conn->prepare("DELETE FROM consultas WHERE user_id = ?");
+            $delC->bind_param("i", $uid);
+            $delC->execute();
+
+            // Excluir medicamentos
+            $delM = $conn->prepare("DELETE FROM medications WHERE user_id = ?");
+            $delM->bind_param("i", $uid);
+            $delM->execute();
+        }
+
+        // Agora excluir o usuário
+        $delUser = $conn->prepare("DELETE FROM users WHERE name LIKE ?");
+        $delUser->bind_param("s", $like);
+
+        if ($delUser->execute()) {
+            $message = "Usuário(s), medicamentos e consultas excluídos com sucesso!";
+        } else {
+            $message = "Erro ao excluir: " . $conn->error;
+        }
+    }
 }
-$conn->close();
+
+
+
+// ------------------------------------------------------
+// EXCLUIR MEDICAMENTO POR NOME
+// ------------------------------------------------------
+if (isset($_POST['delete_med_name'])) {
+    $med = trim($_POST['delete_med_name']);
+
+    if ($med !== "") {
+        $stmt = $conn->prepare("DELETE FROM medications WHERE name LIKE ?");
+        $like = "%".$med."%";
+        $stmt->bind_param("s", $like);
+
+        if ($stmt->execute()) {
+            $message = "Medicamento(s) excluído(s) com sucesso!";
+        } else {
+            $message = "Erro ao excluir medicamento: " . $conn->error;
+        }
+    }
+}
+
+
+
+// ------------------------------------------------------
+// EXCLUIR CONSULTA POR NOME
+// ------------------------------------------------------
+if (isset($_POST['delete_consulta_name'])) {
+    $con = trim($_POST['delete_consulta_name']);
+
+    if ($con !== "") {
+        $stmt = $conn->prepare("DELETE FROM consultas WHERE descricao LIKE ?");
+        $like = "%".$con."%";
+        $stmt->bind_param("s", $like);
+
+        if ($stmt->execute()) {
+            $message = "Consulta(s) excluída(s) com sucesso!";
+        } else {
+            $message = "Erro ao excluir consulta: " . $conn->error;
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -64,107 +97,111 @@ $conn->close();
         body {
             margin: 0;
             padding: 0;
+            background-color: #87CEFA;
             font-family: Arial, sans-serif;
-            background-color: #87CEFA; /* Azul celeste brilhante */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
         }
-        .delete-container {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+        .container {
+            width: 480px;
+            margin: 50px auto;
+            background: #ffffffdd;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px #0003;
+        }
+
+        h2 {
             text-align: center;
+            color: #007BFF;
         }
-        .delete-container h2 {
-            margin-bottom: 20px;
-        }
-        .delete-container label {
+
+        label {
+            font-weight: bold;
+            margin-top: 12px;
             display: block;
-            margin-bottom: 5px;
         }
-        .delete-container input[type="text"] {
+
+        input[type="text"] {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 8px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            margin-top: 5px;
+            margin-bottom: 15px;
         }
-        .delete-container input[type="submit"] {
+
+        input[type="submit"] {
             width: 100%;
-            padding: 10px;
-            background-color: #007BFF;
+            padding: 13px;
+            background: #007BFF;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
         }
-        .delete-container input[type="submit"]:hover {
-            background-color: #0056b3;
+
+        input[type="submit"]:hover {
+            background: #0056b3;
         }
-        .delete-container p {
+
+        .back {
+            width: 100%;
+            padding: 13px;
+            background: #6c757d;
+            color: white;
+            border-radius: 8px;
+            border: none;
             margin-top: 10px;
+            cursor: pointer;
         }
-        .message {
-            margin-top: 20px;
+
+        .back:hover {
+            background: #5a6268;
+        }
+
+        .msg {
+            background: #e3f2fd;
+            padding: 12px;
+            border-left: 5px solid #007BFF;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            text-align: center;
             font-weight: bold;
         }
-        .back-button {
-            margin-top: 20px;
-            width: 100%;
-            padding: 10px;
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .back-button:hover {
-            background-color: #5a6268;
-        }
     </style>
-    <script>
-        function toggleForm(type) {
-            if (type === 'user') {
-                document.getElementById('user_form').style.display = 'block';
-                document.getElementById('appointment_form').style.display = 'none';
-            } else if (type === 'appointment') {
-                document.getElementById('user_form').style.display = 'none';
-                document.getElementById('appointment_form').style.display = 'block';
-            }
-        }
-    </script>
 </head>
 <body>
-    <div class="delete-container">
-        <h2>Excluir Dados</h2>
-        <form action="delete_data.php" method="post">
-            <input type="radio" id="user" name="delete_type" value="user" checked onclick="toggleForm('user')">
-            <label for="user">Excluir Usuário</label><br>
-            <input type="radio" id="appointment" name="delete_type" value="appointment" onclick="toggleForm('appointment')">
-            <label for="appointment">Excluir Consulta</label><br><br>
 
-            <div id="user_form">
-                <label for="user_name">Nome do Usuário:</label><br>
-                <input type="text" id="user_name" name="user_name"><br>
-            </div>
+<div class="container">
 
-            <div id="appointment_form" style="display:none;">
-                <label for="appointment_id">ID da Consulta:</label><br>
-                <input type="text" id="appointment_id" name="appointment_id"><br>
-            </div><br>
+    <h2>Excluir Dados</h2>
 
-            <input type="submit" value="Excluir Dados">
-        </form>
+    <?php if ($message !== "") { echo "<div class='msg'>$message</div>"; } ?>
 
-        <?php if ($message): ?>
-            <p class="message"><?php echo htmlspecialchars($message); ?></p>
-        <?php endif; ?>
+    <!-- EXCLUIR USUÁRIO -->
+    <form method="post">
+        <label>Excluir Usuário pelo Nome:</label>
+        <input type="text" name="delete_user_name" placeholder="Ex: João Silva">
+        <input type="submit" value="Excluir Usuário">
+    </form>
 
-        <button class="back-button" onclick="window.location.href='dashboard_admin.php'">Voltar</button>
-    </div>
+    <!-- EXCLUIR MEDICAMENTO -->
+    <form method="post">
+        <label>Excluir Medicamento pelo Nome:</label>
+        <input type="text" name="delete_med_name" placeholder="Ex: Dipirona">
+        <input type="submit" value="Excluir Medicamento">
+    </form>
+
+    <!-- EXCLUIR CONSULTA -->
+    <form method="post">
+        <label>Excluir Consulta pelo Nome/Descrição:</label>
+        <input type="text" name="delete_consulta_name" placeholder="Ex: Retorno cardiologista">
+        <input type="submit" value="Excluir Consulta">
+    </form>
+
+    <button class="back" onclick="window.history.back();">Voltar</button>
+
+</div>
+
 </body>
 </html>
-
