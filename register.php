@@ -1,21 +1,65 @@
 <?php
 include('db.php');
 
+// Exibir erros (debug temporário)
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST['name'];
-    $cpf = $_POST['cpf'];
-    $phone = $_POST['phone'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+
+    // Sanitização
+    $name = trim($_POST['name']);
+    $cpf = trim($_POST['cpf']);
+    $phone = trim($_POST['phone']);
+    $password = trim($_POST['password']);
     $is_admin = isset($_POST['is_admin']) ? 1 : 0;
 
-    $sql = "INSERT INTO users (name, cpf, phone, password, is_admin) VALUES ('$name', '$cpf', '$phone', '$password', '$is_admin')";
-
-    if ($conn->query($sql) === TRUE) {
-        echo "Registro criado com sucesso!";
-    } else {
-        echo "Erro: " . $sql . "<br>" . $conn->error;
+    // Validações
+    if ($name === "" || $cpf === "" || $phone === "" || $password === "") {
+        echo "<script>alert('Preencha todos os campos!'); window.history.back();</script>";
+        exit();
     }
 
+    if (strlen($password) < 8) {
+        echo "<script>alert('A senha deve ter pelo menos 8 caracteres!'); window.history.back();</script>";
+        exit();
+    }
+
+    // Verificar CPF já cadastrado
+    $check = $conn->prepare("SELECT id FROM users WHERE cpf = ?");
+    if (!$check) {
+        die("Erro no prepare do SELECT: " . $conn->error);
+    }
+
+    $check->bind_param("s", $cpf);
+    $check->execute();
+    $check_result = $check->get_result();
+
+    if ($check_result->num_rows > 0) {
+        echo "<script>alert('Este CPF já está cadastrado!'); window.history.back();</script>";
+        exit();
+    }
+
+    // Hash da senha
+    $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+    // Inserção segura
+    $stmt = $conn->prepare("INSERT INTO users (name, cpf, phone, password, is_admin) VALUES (?, ?, ?, ?, ?)");
+    if (!$stmt) {
+        die("Erro no prepare do INSERT: " . $conn->error);
+    }
+
+    $stmt->bind_param("ssssi", $name, $cpf, $phone, $hashed_password, $is_admin);
+
+    if ($stmt->execute()) {
+        echo "<script>alert('Registro concluído com sucesso!'); window.location='index.php';</script>";
+        exit();
+    } else {
+        die("Erro ao inserir: " . $stmt->error);
+    }
+
+    $stmt->close();
     $conn->close();
 }
 ?>
@@ -29,93 +73,86 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background-color: #87CEFA; /* Azul celeste brilhante */
+            background-color: #87CEFA;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
         .register-container {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 50px;
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 40px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: left;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+            width: 350px;
         }
-        .register-container h2 {
-            margin-bottom: 20px;
+        h2 {
+            text-align: center;
+            color: #007BFF;
         }
-        .register-container label {
-            
-            margin-bottom: 5px;
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
         }
-        .register-container input[type="text"],
-        .register-container input[type="password"] {
+        input[type="text"], input[type="password"] {
             width: 100%;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-top: 5px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 6px;
         }
-        .register-container input[type="checkbox"] {
-            margin-top: -30px;
-            margin-left: 10px;
-            padding: 5px;
-        }
-        .register-container input[type="submit"] {
+        input[type="submit"] {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
+            margin-top: 15px;
             background-color: #007BFF;
-            color: white;
+            color: #fff;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
         }
-        .register-container input[type="submit"]:hover {
+        input[type="submit"]:hover {
             background-color: #0056b3;
-        }
-        .register-container p {
-            margin-top: 10px;
-        }
-        .register-container a {
-            color: #007BFF;
-            text-decoration: none;
-        }
-        .register-container a:hover {
-            text-decoration: underline;
         }
         .back-button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #007BFF;
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background-color: #6c757d;
             color: white;
             border: none;
-            border-radius: 5px;
-            text-decoration: none;
-        }
-        .back-button:hover {
-            background-color: #0056b3;
+            border-radius: 6px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="register-container">
         <h2>Registro</h2>
-        <form action="register.php" method="post">
+
+        <!-- AQUI está a correção importantíssima -->
+        <form action="" method="post">
+
             <label for="name">Nome:</label>
-            <input type="text" id="name" name="name" required><br>
+            <input type="text" name="name" required>
+
             <label for="cpf">CPF:</label>
-            <input type="text" id="cpf" name="cpf" required><br>
+            <input type="text" name="cpf" required>
+
             <label for="phone">Telefone:</label>
-            <input type="text" id="phone" name="phone" required><br>
+            <input type="text" name="phone" required>
+
             <label for="password">Senha:</label>
-            <input type="password" id="password" name="password" minlength="8" required><br><br>
+            <input type="password" name="password" minlength="8" required>
+
             <label for="is_admin">Administrador:</label>
-            <input type="checkbox" id="is_admin" name="is_admin"><br><br><br>
+            <input type="checkbox" name="is_admin">
+
             <input type="submit" value="Registrar">
         </form>
+
         <button class="back-button" onclick="window.history.back();">Voltar</button>
-        <p>Já tem uma conta? <a href="index.php">Faça login</a></p>
     </div>
 </body>
 </html>
