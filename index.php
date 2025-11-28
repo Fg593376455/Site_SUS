@@ -1,31 +1,10 @@
 <?php
 session_start();
-include('db.php');
-// Usar prepared statements para evitar injeção de SQL
-$stmt = $conn->prepare("SELECT is_admin FROM users WHERE id = ?");
-$stmt->bind_param("i", $_SESSION['user_id']);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$is_admin = ($row !== null && array_key_exists('is_admin', $row)) ? $row['is_admin'] : null;
 
-
-if ($is_admin !== null) {
-    if ($is_admin == 1) {
-        header('Location: dashboard_admin.php');
-        exit();
-    } else {
-        header('Location: dashboard_user.php');
-        exit();
-    }
-
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit(); // Garante que o script PHP não continue executando após redirecionar
-}
-
-
+// Se já estiver logado, redireciona
+if (isset($_SESSION['user_id'])) {
+    header("Location: dashboard_user.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>
@@ -38,72 +17,110 @@ if (!isset($_SESSION['user_id'])) {
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background: url('images/background.jpg') no-repeat center center fixed;
-            background-size: cover;
-        }
-        .login-container {
+            background-color: #87CEFA; /* Azul SUS, igual às outras telas */
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
-        .login-form {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+        .login-container {
+            background: rgba(255,255,255,0.9);
+            width: 350px;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.25);
+            text-align: center;
         }
-        .login-form h2 {
+
+        h2 {
+            color: #007BFF;
             margin-bottom: 20px;
         }
-        .login-form label {
+
+        label {
             display: block;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
             margin-bottom: 5px;
         }
-        .login-form input[type="text"],
-        .login-form input[type="password"] {
+
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 6px;
         }
-        .login-form input[type="submit"] {
+
+        input[type="submit"] {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background-color: #007BFF;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 15px;
         }
-        .login-form input[type="submit"]:hover {
+
+        input[type="submit"]:hover {
             background-color: #0056b3;
         }
-        .login-form p {
-            margin-top: 10px;
+
+        .error {
+            color: #d32f2f;
+            margin-bottom: 15px;
+            font-weight: bold;
         }
-        .login-form a {
+
+        p {
+            margin-top: 15px;
+        }
+
+        a {
             color: #007BFF;
+            font-weight: bold;
+            text-decoration: none;
         }
-        .login-form a:hover {
+
+        a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
+
     <div class="login-container">
-        <div class="login-form">
-            <h2>Login</h2>
-            <form action="login.php" method="post">
-                <label for="cpf">CPF:</label>
-                <input type="text" id="cpf" name="cpf" required>
-                <label for="password">Senha:</label>
-                <input type="password" id="password" name="password" required>
-                <input type="submit" value="Login">
-            </form>
-            <p>Não tem uma conta? <a href="register.php">Registre-se aqui</a></p>
-        </div>
+        <h2>Login</h2>
+
+        <!-- Exibição de erros -->
+        <?php if (isset($_GET['error'])): ?>
+            <p class="error">
+                <?php
+                    switch ($_GET['error']) {
+                        case 'empty_fields': echo "Preencha todos os campos."; break;
+                        case 'wrong_password': echo "Senha incorreta."; break;
+                        case 'cpf_not_found': echo "CPF não encontrado."; break;
+                    }
+                ?>
+            </p>
+        <?php endif; ?>
+
+        <form action="login.php" method="post">
+            <label for="cpf">CPF:</label>
+            <input type="text" id="cpf" name="cpf" required>
+
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" required>
+
+            <input type="submit" value="Entrar">
+        </form>
+
+        <p>Não tem uma conta? <a href="register.php">Registre-se aqui</a></p>
     </div>
+
 </body>
 </html>
