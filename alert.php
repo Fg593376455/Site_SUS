@@ -1,20 +1,21 @@
 <?php
 session_start();
+
+// Verifica login
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
-    exit(); // Garante que o script PHP não continue executando após redirecionar
+    exit();
 }
 
 include('db.php');
 
 $user_id = $_SESSION['user_id'];
 
-// Usar prepared statements para evitar injeção de SQL
+// Busca medicamentos do usuário
 $stmt = $conn->prepare("SELECT name, next_refill_date FROM medications WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -23,47 +24,132 @@ $result = $stmt->get_result();
     <title>Alertas de Medicamentos</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: #87CEFA;
+            font-family: Arial, sans-serif;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
+
         .medications-container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background: rgba(255,255,255,0.95);
+            width: 520px;
+            padding: 30px;
+            border-radius: 12px;
             text-align: center;
+            box-shadow: 0 0 12px rgba(0,0,0,0.25);
         }
-        .medications-container h2 {
+
+        h2 {
             margin-bottom: 20px;
+            color: #007BFF;
         }
-        .medications-container p {
-            margin: 10px 0;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+            padding: 12px;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f1f1f1;
+        }
+
+        .danger {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #ff9800;
+            font-weight: bold;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
+
     <div class="medications-container">
         <h2>Alertas de Medicamentos</h2>
-        <?php
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                echo "<p>Nome do Medicamento: " . htmlspecialchars($row["name"]) . " - Próxima Reposição: " . htmlspecialchars($row["next_refill_date"]) . "</p>";
-            }
-        } else {
-            echo "<p>Nenhum medicamento registrado.</p>";
-        }
 
-        // Fechar a declaração e a conexão
-        $stmt->close();
-        $conn->close();
-        ?>
-        <button class="back-button" onclick="window.history.back();">Voltar</button>
+        <?php if ($result->num_rows > 0): ?>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Medicamento</th>
+                        <th>Próxima Reposição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                    while ($row = $result->fetch_assoc()):
+                        $name = htmlspecialchars($row["name"]);
+                        $refill = htmlspecialchars($row["next_refill_date"]);
+
+                        // Cálculo do alerta
+                        $today = new DateTime();
+                        $refill_date = new DateTime($refill);
+                        $diff = $today->diff($refill_date)->days;
+
+                        // Define cor do alerta
+                        $class = "";
+                        if ($refill_date < $today) {
+                            $class = "danger"; // já passou da data
+                        } elseif ($diff <= 3) {
+                            $class = "danger";
+                        } elseif ($diff <= 7) {
+                            $class = "warning";
+                        }
+                ?>
+                    <tr>
+                        <td><?= $name ?></td>
+                        <td class="<?= $class ?>"><?= $refill ?></td>
+                    </tr>
+                <?php endwhile; ?>
+                </tbody>
+            </table>
+
+        <?php else: ?>
+
+            <p>Nenhum medicamento registrado.</p>
+
+        <?php endif; ?>
+
+        <button class="back-button" onclick="window.history.back()">Voltar</button>
     </div>
+
 </body>
 </html>
+
+<?php
+$stmt->close();
+$conn->close();
+?>
