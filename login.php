@@ -3,37 +3,54 @@ session_start();
 include('db.php');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $cpf = $_POST['cpf'];
-    $password = $_POST['password'];
 
-    // Usar prepared statements para evitar injeção de SQL
+    // Sanitização básica
+    $cpf = trim($_POST['cpf']);
+    $password = trim($_POST['password']);
+
+    // Validação simples
+    if (empty($cpf) || empty($password)) {
+        header("Location: index.php?error=empty_fields");
+        exit();
+    }
+
+    // Buscar usuário por CPF
     $stmt = $conn->prepare("SELECT id, password, is_admin FROM users WHERE cpf = ?");
     $stmt->bind_param("s", $cpf);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
+    // Verifica se CPF existe
+    if ($result->num_rows === 1) {
         $row = $result->fetch_assoc();
+
+        // Verifica senha
         if (password_verify($password, $row['password'])) {
+
+            // Login bem-sucedido
             $_SESSION['user_id'] = $row['id'];
-            if ($row['is_admin']) {
+
+            if ($row['is_admin'] == 1) {
                 header("Location: dashboard_admin.php");
             } else {
                 header("Location: dashboard_user.php");
             }
             exit();
+
         } else {
-            echo "Senha incorreta!";
+            // Senha incorreta
+            header("Location: index.php?error=wrong_password");
+            exit();
         }
+
     } else {
-        echo "CPF não encontrado!";
+        // CPF não existe
+        header("Location: index.php?error=cpf_not_found");
+        exit();
     }
 
+    // Boa prática
     $stmt->close();
     $conn->close();
 }
 ?>
-
-
-
-
